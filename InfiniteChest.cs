@@ -9,7 +9,7 @@ using Jotunn.Utils;
 
 namespace InfiniteChest
 {
-    [BepInPlugin("BrugherheimFolks.InfiniteChest", "Infinite Chest", "1.0.0")]
+    [BepInPlugin("BrugherheimFolks.InfiniteChest", "Infinite Chest", "1.0.1")]
     [BepInDependency(Jotunn.Main.ModGuid)]
     [NetworkCompatibility(CompatibilityLevel.EveryoneMustHaveMod, VersionStrictness.Minor)]
     public class Plugin : BaseUnityPlugin

@@ -4,7 +4,7 @@
     <LangVersion>latest</LangVersion>
     <ValheimDir Condition="'$(ValheimDir)' == ''">$(HOME)/.steam/steam/steamapps/common/Valheim</ValheimDir>
     <BepInExDir Condition="'$(BepInExDir)' == ''">$(HOME)/.config/r2modmanPlus-local/Valheim/profiles/Moddato/BepInEx</BepInExDir>
-    <Managed>$(ValheimDir)/valheim_Data/Managed</Managed>
+    <Managed Condition="'$(Managed)' == ''">$(ValheimDir)/valheim_Data/Managed</Managed>
   </PropertyGroup>
   <ItemGroup>
     <Reference Include="$(Managed)/assembly_valheim.dll" Private="false" />

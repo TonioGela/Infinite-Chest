@@ -1,0 +1,51 @@
+name: Build
+
+on:
+  push:
+    branches: [main]
+    tags: ["v*"]
+  pull_request:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    env:
+      DOTNET_ROLL_FORWARD: Major
+      ValheimDir: ${{ github.workspace }}/deps/valheim
+      Managed: ${{ github.workspace }}/deps/valheim/valheim_server_Data/Managed
+      BepInExDir: ${{ github.workspace }}/deps/BepInEx
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 8.0.x
+
+      # The dedicated server is free to download anonymously and ships the same game DLLs we compile against.
+      - name: Download Valheim dedicated server
+        run: docker run --rm -v "$ValheimDir:/data" steamcmd/steamcmd:latest +force_install_dir /data +login anonymous +app_update 896660 validate +quit
+
+      - name: Download BepInEx and Jotunn
+        run: |
+          curl -fsSL -o bep.zip https://thunderstore.io/package/download/denikson/BepInExPack_Valheim/5.4.2333/
+          curl -fsSL -o jotunn.zip https://thunderstore.io/package/download/ValheimModding/Jotunn/2.30.2/
+          unzip -q bep.zip -d bep && unzip -q jotunn.zip -d jotunn
+          mkdir -p "$BepInExDir/plugins/ValheimModding-Jotunn"
+          cp -r "$(find bep -type d -path '*BepInEx/core' | head -1)" "$BepInExDir/"
+          cp "$(find jotunn -name Jotunn.dll | head -1)" "$BepInExDir/plugins/ValheimModding-Jotunn/"
+
+      - run: ./package.sh
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: package
+          path: build/*.zip
+
+      - name: Publish to Thunderstore
+        if: startsWith(github.ref, 'refs/tags/v')
+        env:
+          TCLI_AUTH_TOKEN: ${{ secrets.TCLI_AUTH_TOKEN }}
+        run: |
+          v="${GITHUB_REF_NAME#v}"
+          grep -q "versionNumber = \"$v\"" thunderstore.toml || { echo "thunderstore.toml version != tag $v"; exit 1; }
+          grep -q "\"Infinite Chest\", \"$v\")" InfiniteChest.cs || { echo "BepInPlugin version != tag $v"; exit 1; }
+          dotnet tcli publish --file "build/BrugherheimFolks-Infinite_Chest-$v.zip" --token "$TCLI_AUTH_TOKEN"

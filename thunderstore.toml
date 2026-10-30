@@ -1,0 +1,29 @@
+[config]
+schemaVersion = "0.0.1"
+
+[package]
+namespace = "BrugherheimFolks"
+name = "Infinite_Chest"
+versionNumber = "1.0.1"
+description = "A wood chest that, once you put an item in, stays full of that item forever. Multiplayer compatible."
+websiteUrl = "https://github.com/TonioGela/Infinite-Chest"
+containsNsfwContent = false
+
+[package.dependencies]
+ValheimModding-Jotunn = "2.30.2"
+
+[build]
+icon = "./icon.png"
+readme = "./README.md"
+outdir = "./build"
+
+[[build.copy]]
+source = "./bin/Release/netstandard2.1/InfiniteChest.dll"
+target = "InfiniteChest.dll"
+
+[publish]
+repository = "https://thunderstore.io"
+communities = ["valheim"]
+
+[publish.categories]
+valheim = ["mods", "server-side"]

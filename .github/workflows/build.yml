@@ -20,10 +20,27 @@ jobs:
         with:
           dotnet-version: 8.0.x
 
+      # Re-download only when Valheim updates (new build id) or this workflow changes (e.g. BepInEx/Jotunn versions).
+      - name: Get Valheim server build id
+        id: steam
+        run: |
+          id=$(curl -fsSL https://api.steamcmd.net/v1/info/896660 | jq -r '.data["896660"].depots.branches.public.buildid') || id=""
+          [[ "$id" =~ ^[0-9]+$ ]] || id="unknown-$GITHUB_RUN_ID"
+          echo "buildid=$id" >> "$GITHUB_OUTPUT"
+
+      - uses: actions/cache@v4
+        id: cache
+        with:
+          path: |
+            deps/valheim/valheim_server_Data/Managed
+            deps/BepInEx
+          key: deps-${{ steps.steam.outputs.buildid }}-${{ hashFiles('.github/workflows/build.yml') }}
+
       # The dedicated server is free to download anonymously and ships the same game DLLs we compile against.
       - name: Download Valheim dedicated server
+        if: steps.cache.outputs.cache-hit != 'true'
         run: |
-          sudo apt-get install -yq lib32gcc-s1
+          dpkg -s lib32gcc-s1 >/dev/null 2>&1 || { sudo apt-get update -q && sudo apt-get install -yq lib32gcc-s1; }
           mkdir -p steamcmd && curl -fsSL https://steamcdn-a.akamaihd.net/client/installer/steamcmd_linux.tar.gz | tar -xz -C steamcmd
           # A freshly extracted steamcmd's first install often fails with "Missing configuration"; the next run in the
           # same steamcmd folder succeeds (reproduced locally: 6/8 first attempts failed, 3/3 second attempts succeeded).
@@ -35,10 +52,12 @@ jobs:
           test -f "$Managed/assembly_valheim.dll" || { tail -n 50 ~/Steam/logs/content_log.txt ~/Steam/logs/stderr.txt; exit 1; }
 
       - name: Download BepInEx and Jotunn
+        if: steps.cache.outputs.cache-hit != 'true'
         run: |
           curl -fsSL -o bep.zip https://thunderstore.io/package/download/denikson/BepInExPack_Valheim/5.4.2333/
           curl -fsSL -o jotunn.zip https://thunderstore.io/package/download/ValheimModding/Jotunn/2.30.2/
-          unzip -q bep.zip -d bep && unzip -q jotunn.zip -d jotunn
+          unzip -q bep.zip -d bep
+          unzip -q jotunn.zip -d jotunn || [ $? -eq 1 ] # exit 1 = warnings only (the zip uses Windows backslashes)
           mkdir -p "$BepInExDir/plugins/ValheimModding-Jotunn"
           cp -r "$(find bep -type d -path '*BepInEx/core' | head -1)" "$BepInExDir/"
           cp "$(find jotunn -name Jotunn.dll | head -1)" "$BepInExDir/plugins/ValheimModding-Jotunn/"

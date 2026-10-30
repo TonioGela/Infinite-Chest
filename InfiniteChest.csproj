@@ -5,6 +5,11 @@
        </PropertyGroup></Project> -->
   <Import Project="local.props" Condition="Exists('local.props')" />
   <PropertyGroup>
+    <!-- Your mod: DLL name, BepInEx plugin GUID and display name -->
+    <AssemblyName>InfiniteChest</AssemblyName>
+    <PluginGuid>BrugherheimFolks.InfiniteChest</PluginGuid>
+    <PluginName>Infinite Chest</PluginName>
+
     <TargetFramework>netstandard2.1</TargetFramework>
     <LangVersion>latest</LangVersion>
     <ValheimDir Condition="'$(ValheimDir)' == ''">$(HOME)/.steam/steam/steamapps/common/Valheim</ValheimDir>
@@ -13,23 +18,23 @@
   </PropertyGroup>
   <ItemGroup>
     <Reference Include="$(Managed)/assembly_valheim.dll" Private="false" />
-    <Reference Include="$(Managed)/UnityEngine.dll" Private="false" />
-    <Reference Include="$(Managed)/UnityEngine.AssetBundleModule.dll" Private="false" />
     <Reference Include="$(Managed)/assembly_utils.dll" Private="false" />
+    <Reference Include="$(Managed)/UnityEngine.dll" Private="false" />
     <Reference Include="$(Managed)/UnityEngine.CoreModule.dll" Private="false" />
+    <Reference Include="$(Managed)/UnityEngine.AssetBundleModule.dll" Private="false" />
     <Reference Include="$(BepInExDir)/core/BepInEx.dll" Private="false" />
     <Reference Include="$(BepInExDir)/core/0Harmony.dll" Private="false" />
     <Reference Include="$(BepInExDir)/plugins/ValheimModding-Jotunn/Jotunn.dll" Private="false" />
   </ItemGroup>
-  <!-- Local dev: drop every build straight into the r2modman profile, untracked by r2modman (CI sets CI=true) -->
+  <!-- Local dev: drop every build straight into the BepInEx folder, untracked by r2modman (CI sets CI=true) -->
   <Target Name="DeployToProfile" AfterTargets="Build" Condition="'$(CI)' != 'true'">
-    <Copy SourceFiles="$(TargetPath)" DestinationFolder="$(BepInExDir)/plugins/InfiniteChest-dev" />
+    <Copy SourceFiles="$(TargetPath)" DestinationFolder="$(BepInExDir)/plugins/$(AssemblyName)-dev" />
   </Target>
-  <!-- [BepInPlugin] needs a compile-time constant, so turn $(Version) (passed by package.sh) into one -->
-  <Target Name="GeneratePluginVersion" BeforeTargets="CoreCompile">
-    <WriteLinesToFile File="$(IntermediateOutputPath)PluginVersion.cs" Lines="static class PluginVersion { public const string Value = &quot;$(Version)&quot;%3B }" Overwrite="true" WriteOnlyWhenDifferent="true" />
+  <!-- [BepInPlugin] needs compile-time constants, so turn the properties above and $(Version) (passed by package.sh) into them -->
+  <Target Name="GenerateModInfo" BeforeTargets="CoreCompile">
+    <WriteLinesToFile File="$(IntermediateOutputPath)ModInfo.cs" Lines="static class ModInfo { public const string Guid = &quot;$(PluginGuid)&quot;%3B public const string Name = &quot;$(PluginName)&quot;%3B public const string Version = &quot;$(Version)&quot;%3B }" Overwrite="true" WriteOnlyWhenDifferent="true" />
     <ItemGroup>
-      <Compile Include="$(IntermediateOutputPath)PluginVersion.cs" />
+      <Compile Include="$(IntermediateOutputPath)ModInfo.cs" />
     </ItemGroup>
   </Target>
 </Project>

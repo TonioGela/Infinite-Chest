@@ -10,7 +10,7 @@ using Jotunn.Utils;
 
 namespace InfiniteChest
 {
-    [BepInPlugin("BrugherheimFolks.InfiniteChest", "Infinite Chest", PluginVersion.Value)]
+    [BepInPlugin(ModInfo.Guid, ModInfo.Name, ModInfo.Version)]
     [BepInDependency(Jotunn.Main.ModGuid)]
     [NetworkCompatibility(CompatibilityLevel.EveryoneMustHaveMod, VersionStrictness.Minor)]
     public class Plugin : BaseUnityPlugin
@@ -22,7 +22,7 @@ namespace InfiniteChest
         void Awake()
         {
             PrefabManager.OnVanillaPrefabsAvailable += AddPiece;
-            new Harmony("BrugherheimFolks.InfiniteChest").PatchAll();
+            new Harmony(ModInfo.Guid).PatchAll();
         }
 
         static void AddPiece()

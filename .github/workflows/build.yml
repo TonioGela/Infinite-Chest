@@ -15,6 +15,9 @@ jobs:
       Managed: ${{ github.workspace }}/deps/valheim/valheim_server_Data/Managed
       BepInExDir: ${{ github.workspace }}/deps/BepInEx
       VERSION: ${{ github.ref_type == 'tag' && github.ref_name || '' }}
+      # Each store is published to only when its secrets are set, so a new mod can start with one, both or neither
+      HAS_THUNDERSTORE: ${{ secrets.TCLI_AUTH_TOKEN != '' }}
+      HAS_NEXUS: ${{ secrets.NEXUSMODS_API_KEY != '' && secrets.NEXUSMODS_FILE_ID != '' }}
     steps:
       - uses: actions/checkout@v7
         with:
@@ -46,8 +49,7 @@ jobs:
           dpkg -s lib32gcc-s1 >/dev/null 2>&1 || { sudo apt-get update -q && sudo apt-get install -yq lib32gcc-s1; }
           mkdir -p steamcmd && curl -fsSL https://steamcdn-a.akamaihd.net/client/installer/steamcmd_linux.tar.gz | tar -xz -C steamcmd
           # A freshly extracted steamcmd's first install often fails with "Missing configuration"; the next run in the
-          # same steamcmd folder succeeds (reproduced locally: 6/8 first attempts failed, 3/3 second attempts succeeded).
-          # Its exit code is unreliable, so check for the DLL instead.
+          # same steamcmd folder succeeds. Its exit code is unreliable, so check for the DLL instead.
           for i in 1 2 3; do
             steamcmd/steamcmd.sh +force_install_dir "$ValheimDir" +login anonymous +app_update 896660 validate +quit || true
             [ -f "$Managed/assembly_valheim.dll" ] && break
@@ -71,27 +73,30 @@ jobs:
         if: ${{ !env.ACT }} # act 0.2.88's artifact server only speaks upload-artifact@v4
         with:
           name: package
-          path: build/*.zip
+          path: build/*/*.zip
+
+      - name: Release info
+        id: release
+        if: startsWith(github.ref, 'refs/tags/v') && !env.ACT # never publish from a local act run
+        run: |
+          echo "version=${GITHUB_REF_NAME#v}" >> "$GITHUB_OUTPUT"
+          echo "thunderstore_zip=$(ls build/thunderstore/*.zip)" >> "$GITHUB_OUTPUT"
+          echo "nexus_zip=$(ls build/nexus/*.zip)" >> "$GITHUB_OUTPUT"
 
       - name: Publish to Thunderstore
-        if: startsWith(github.ref, 'refs/tags/v') && !env.ACT # never publish from a local act run
+        if: steps.release.outcome == 'success' && env.HAS_THUNDERSTORE == 'true'
         env:
           TCLI_AUTH_TOKEN: ${{ secrets.TCLI_AUTH_TOKEN }}
-        run: dotnet tcli publish --file "build/BrugherheimFolks-Infinite_Chest-${GITHUB_REF_NAME#v}.zip" --token "$TCLI_AUTH_TOKEN"
-
-      - name: Release version
-        id: release
-        if: startsWith(github.ref, 'refs/tags/v') && !env.ACT
-        run: echo "version=${GITHUB_REF_NAME#v}" >> "$GITHUB_OUTPUT"
+        run: dotnet tcli publish --file "${{ steps.release.outputs.thunderstore_zip }}" --token "$TCLI_AUTH_TOKEN"
 
       # Adds a new version to an existing file on the mod page; the page and its first file must be created by hand once.
       - name: Publish to Nexus Mods
-        if: startsWith(github.ref, 'refs/tags/v') && !env.ACT
+        if: steps.release.outcome == 'success' && env.HAS_NEXUS == 'true'
         uses: Nexus-Mods/upload-action@v1.0.0-beta.11
         with:
           api_key: ${{ secrets.NEXUSMODS_API_KEY }}
           file_id: ${{ secrets.NEXUSMODS_FILE_ID }}
-          filename: build/InfiniteChest-${{ steps.release.outputs.version }}-nexus.zip
+          filename: ${{ steps.release.outputs.nexus_zip }}
           version: ${{ steps.release.outputs.version }}
           archive_existing_version: true
           update_mod_version: true

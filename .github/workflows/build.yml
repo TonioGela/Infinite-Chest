@@ -78,3 +78,20 @@ jobs:
         env:
           TCLI_AUTH_TOKEN: ${{ secrets.TCLI_AUTH_TOKEN }}
         run: dotnet tcli publish --file "build/BrugherheimFolks-Infinite_Chest-${GITHUB_REF_NAME#v}.zip" --token "$TCLI_AUTH_TOKEN"
+
+      - name: Release version
+        id: release
+        if: startsWith(github.ref, 'refs/tags/v') && !env.ACT
+        run: echo "version=${GITHUB_REF_NAME#v}" >> "$GITHUB_OUTPUT"
+
+      # Adds a new version to an existing file on the mod page; the page and its first file must be created by hand once.
+      - name: Publish to Nexus Mods
+        if: startsWith(github.ref, 'refs/tags/v') && !env.ACT
+        uses: Nexus-Mods/upload-action@v1.0.0-beta.11
+        with:
+          api_key: ${{ secrets.NEXUSMODS_API_KEY }}
+          file_id: ${{ secrets.NEXUSMODS_FILE_ID }}
+          filename: build/InfiniteChest-${{ steps.release.outputs.version }}-nexus.zip
+          version: ${{ steps.release.outputs.version }}
+          archive_existing_version: true
+          update_mod_version: true

@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
@@ -16,7 +17,7 @@ namespace InfiniteChest
     {
         public const string ChestName = "Infinite Chest";
         const string ItemKey = "InfiniteChest_item";
-        static bool refilling;
+        static bool refilling, loading;
 
         void Awake()
         {
@@ -72,7 +73,29 @@ namespace InfiniteChest
             static IEnumerable<MethodBase> TargetMethods() => AccessTools.GetDeclaredMethods(typeof(Inventory))
                 .Where(m => m.Name == "AddItem" && m.GetParameters()[0].ParameterType == typeof(ItemDrop.ItemData));
 
-            static bool Prefix(Inventory __instance, ItemDrop.ItemData __0, ref bool __result) => __result = Allowed(__instance, __0);
+            static bool Prefix(Inventory __instance, ItemDrop.ItemData __0, object[] __args, ref bool __result)
+            {
+                if (refilling || loading || InventoryName(__instance) != ChestName) return true;
+                if (!Allowed(__instance, __0)) return __result = false;
+                if (__instance.GetAllItems().Count == 0) return true; // the first item sets what the chest holds
+                // The chest is always full, so more of its own item is absorbed: report success without storing it.
+                // The (item, amount, x, y) overload only takes `amount` from the stack and its caller removes the item at 0.
+                if (__args.Length >= 4) __0.m_stack -= Math.Min((int)__args[1], __0.m_stack);
+                __result = true;
+                return false;
+            }
+        }
+
+        // Loading clears the inventory and re-adds every saved stack through AddItem: let those through untouched,
+        // or all but the first stack would be absorbed.
+        [HarmonyPatch]
+        static class LoadUntouched
+        {
+            static IEnumerable<MethodBase> TargetMethods() => AccessTools.GetDeclaredMethods(typeof(Inventory))
+                .Where(m => m.Name == "Load" || m.Name == "LoadOld");
+
+            static void Prefix() => loading = true;
+            static void Finalizer() => loading = false;
         }
 
         // Dropping onto an occupied slot swaps items, removing them from their source *before* adding them to the

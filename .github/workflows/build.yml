@@ -22,7 +22,12 @@ jobs:
 
       # The dedicated server is free to download anonymously and ships the same game DLLs we compile against.
       - name: Download Valheim dedicated server
-        run: docker run --rm -v "$ValheimDir:/data" steamcmd/steamcmd:latest +force_install_dir /data +login anonymous +app_update 896660 validate +quit
+        run: |
+          sudo apt-get install -yq lib32gcc-s1
+          mkdir -p steamcmd && curl -fsSL https://steamcdn-a.akamaihd.net/client/installer/steamcmd_linux.tar.gz | tar -xz -C steamcmd
+          # steamcmd's exit code is unreliable (e.g. 7 after self-updating), so check for the DLL instead
+          steamcmd/steamcmd.sh +force_install_dir "$ValheimDir" +login anonymous +app_update 896660 validate +quit || true
+          test -f "$Managed/assembly_valheim.dll"
 
       - name: Download BepInEx and Jotunn
         run: |

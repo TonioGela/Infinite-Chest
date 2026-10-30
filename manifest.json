@@ -1,0 +1,9 @@
+{
+    "name": "Infinite_Chest",
+    "version_number": "1.0.0",
+    "website_url": "",
+    "description": "A wood chest that, once you put an item in, stays full of that item forever. Multiplayer compatible.",
+    "dependencies": [
+        "ValheimModding-Jotunn-2.30.2"
+    ]
+}

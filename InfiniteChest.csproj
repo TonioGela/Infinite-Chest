@@ -1,0 +1,19 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>netstandard2.1</TargetFramework>
+    <LangVersion>latest</LangVersion>
+    <ValheimDir Condition="'$(ValheimDir)' == ''">$(HOME)/.steam/steam/steamapps/common/Valheim</ValheimDir>
+    <BepInExDir Condition="'$(BepInExDir)' == ''">$(HOME)/.config/r2modmanPlus-local/Valheim/profiles/Moddato/BepInEx</BepInExDir>
+    <Managed>$(ValheimDir)/valheim_Data/Managed</Managed>
+  </PropertyGroup>
+  <ItemGroup>
+    <Reference Include="$(Managed)/assembly_valheim.dll" Private="false" />
+    <Reference Include="$(Managed)/UnityEngine.dll" Private="false" />
+    <Reference Include="$(Managed)/UnityEngine.AssetBundleModule.dll" Private="false" />
+    <Reference Include="$(Managed)/assembly_utils.dll" Private="false" />
+    <Reference Include="$(Managed)/UnityEngine.CoreModule.dll" Private="false" />
+    <Reference Include="$(BepInExDir)/core/BepInEx.dll" Private="false" />
+    <Reference Include="$(BepInExDir)/core/0Harmony.dll" Private="false" />
+    <Reference Include="$(BepInExDir)/plugins/ValheimModding-Jotunn/Jotunn.dll" Private="false" />
+  </ItemGroup>
+</Project>

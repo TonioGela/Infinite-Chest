@@ -8,15 +8,15 @@ on:
 
 jobs:
   build:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-26.04
     env:
       DOTNET_ROLL_FORWARD: Major
       ValheimDir: ${{ github.workspace }}/deps/valheim
       Managed: ${{ github.workspace }}/deps/valheim/valheim_server_Data/Managed
       BepInExDir: ${{ github.workspace }}/deps/BepInEx
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-dotnet@v4
+      - uses: actions/checkout@v7
+      - uses: actions/setup-dotnet@v6
         with:
           dotnet-version: 8.0.x
 
@@ -28,7 +28,7 @@ jobs:
           [[ "$id" =~ ^[0-9]+$ ]] || id="unknown-$GITHUB_RUN_ID"
           echo "buildid=$id" >> "$GITHUB_OUTPUT"
 
-      - uses: actions/cache@v4
+      - uses: actions/cache@v6
         id: cache
         with:
           path: |
@@ -64,7 +64,8 @@ jobs:
 
       - run: ./package.sh
 
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
+        if: ${{ !env.ACT }} # act 0.2.88's artifact server only speaks upload-artifact@v4
         with:
           name: package
           path: build/*.zip

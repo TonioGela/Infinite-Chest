@@ -4,7 +4,6 @@ schemaVersion = "0.0.1"
 [package]
 namespace = "BrugherheimFolks"
 name = "Infinite_Chest"
-versionNumber = "1.0.1"
 description = "A wood chest that, once you put an item in, stays full of that item forever. Multiplayer compatible."
 websiteUrl = "https://github.com/TonioGela/Infinite-Chest"
 containsNsfwContent = false

@@ -10,3 +10,7 @@ Adds an **Infinite Chest** to the Hammer (Furniture tab). It uses the vanilla wo
 ## Multiplayer
 
 Install on every client **and** the server. Jötunn enforces that everyone has the same version.
+
+## Contributing
+
+Source and build instructions: see [CONTRIBUTING.md](https://github.com/TonioGela/Infinite-Chest/blob/main/CONTRIBUTING.md).

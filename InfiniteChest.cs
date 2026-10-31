@@ -3,7 +3,9 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
 using BepInEx;
+using BepInEx.Configuration;
 using HarmonyLib;
+using Jotunn.Configs;
 using Jotunn.Entities;
 using Jotunn.Managers;
 using Jotunn.Utils;
@@ -19,8 +21,18 @@ namespace InfiniteChest
         const string ItemKey = "InfiniteChest_item";
         static bool refilling, loading;
 
+        public enum FilterMode { All, Whitelist, Blacklist }
+        static ConfigEntry<FilterMode> filterMode;
+        static ConfigEntry<string> filterItems;
+
         void Awake()
         {
+            // Admin-only: Jötunn syncs the server's values to every client and only admins can change them.
+            var adminOnly = new ConfigurationManagerAttributes { IsAdminOnly = true };
+            filterMode = Config.Bind("Filter", "Mode", FilterMode.All,
+                new ConfigDescription("Which items an Infinite Chest accepts: All, Whitelist (only Items) or Blacklist (all but Items).", null, adminOnly));
+            filterItems = Config.Bind("Filter", "Items", "",
+                new ConfigDescription("Comma separated item prefab names, as used by the spawn console command (e.g. Wood,Stone,Resin).", null, adminOnly));
             PrefabManager.OnVanillaPrefabsAvailable += AddPiece;
             new Harmony(ModInfo.Guid).PatchAll();
         }
@@ -118,7 +130,14 @@ namespace InfiniteChest
             if (InventoryName(inv) != ChestName) return true;
             var items = inv.GetAllItems();
             var gear = item.IsEquipable() && item.m_shared.m_itemType != ItemDrop.ItemData.ItemType.Ammo;
-            return !gear && (items.Count == 0 || items[0].m_shared.m_name == item.m_shared.m_name);
+            return !gear && PassesFilter(item) && (items.Count == 0 || items[0].m_shared.m_name == item.m_shared.m_name);
+        }
+
+        static bool PassesFilter(ItemDrop.ItemData item)
+        {
+            if (filterMode.Value == FilterMode.All) return true;
+            var listed = filterItems.Value.Split(',').Any(n => n.Trim().Equals(item.m_dropPrefab?.name, StringComparison.OrdinalIgnoreCase));
+            return listed == (filterMode.Value == FilterMode.Whitelist);
         }
 
         // Breaking the chest would otherwise spill a full chest of items on the ground.
